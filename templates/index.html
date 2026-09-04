@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人脸比对系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #0c0c1e, #1a1a3e);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+        }
+        .container {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 30px;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.6);
+            max-width: 900px;
+            width: 100%;
+        }
+        h1 {
+            text-align: center;
+            font-size: 28px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            color: #00d4ff;
+            text-shadow: 0 0 20px rgba(0,212,255,0.3);
+        }
+        .video-wrapper {
+            position: relative;
+            background: #000;
+            border-radius: 16px;
+            overflow: hidden;
+            aspect-ratio: 16/9;
+            border: 2px solid rgba(0,212,255,0.2);
+        }
+        .video-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+            padding: 12px 20px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .status-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 1.5s infinite;
+        }
+        .status-dot.online { background: #00ff88; }
+        .status-dot.offline { background: #ff4444; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .info-text {
+            font-size: 14px;
+            color: #888;
+        }
+        .info-text strong { color: #00d4ff; }
+        .footer {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 12px;
+            color: #444;
+        }
+        .footer a { color: #00d4ff; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>👁️ 智能人脸比对系统</h1>
+        
+        <div class="video-wrapper">
+            <img src="{{ url_for('video_feed') }}" alt="实时视频流" id="video-stream">
+        </div>
+        
+        <div class="status-bar">
+            <div>
+                <span class="status-dot online"></span>
+                <span id="status-text">实时识别中...</span>
+            </div>
+            <div class="info-text">
+                <strong>已注册人员</strong> 
+                <span id="person-count">加载中...</span>
+            </div>
+        </div>
+        
+        <div class="footer">
+            💡 提示：人脸框 <span style="color:#00ff88;">绿色</span> 表示匹配成功，<span style="color:#ff4444;">红色</span> 表示未知人员
+        </div>
+    </div>
+    
+    <script>
+        // 获取已注册人员数量
+        fetch('/api/person_count')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('person-count').textContent = data.count + ' 人';
+            })
+            .catch(() => {
+                document.getElementById('person-count').textContent = '加载失败';
+            });
+    </script>
+</body>
+</html>
