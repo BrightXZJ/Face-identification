@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>人脸库管理</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+    <div class="container">
+        <div class="nav-bar">
+            <a href="{{ url_for('index') }}" class="nav-back">← 返回主页</a>
+            <span class="nav-title">人脸库管理</span>
+        </div>
+        <div class="manage-panel">
+            <h3>已注册人员列表</h3>
+            <ul id="person-list" class="person-list">
+                <li>加载中...</li>
+            </ul>
+        </div>
+    </div>
+    <script>
+        function loadPersons() {
+            fetch('/api/persons')
+                .then(res => res.json())
+                .then(data => {
+                    const list = document.getElementById('person-list');
+                    list.innerHTML = '';
+                    if (data.persons.length === 0) {
+                        list.innerHTML = '<li class="empty">暂无人员，请先录入</li>';
+                        return;
+                    }
+                    data.persons.forEach(name => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `<span>${name}</span>
+                                        <button class="btn-danger" data-name="${name}">删除</button>`;
+                        list.appendChild(li);
+                    });
+                    // 绑定删除事件
+                    document.querySelectorAll('.btn-danger').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const name = this.getAttribute('data-name');
+                            if (!confirm(`确定要删除 “${name}” 吗？`)) return;
+                            fetch('/api/delete_person', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ name: name })
+                            })
+                            .then(res => res.json())
+                            .then(data => {
+                                alert(data.msg);
+                                if (data.success) loadPersons();
+                            })
+                            .catch(err => alert('删除失败: ' + err.message));
+                        });
+                    });
+                })
+                .catch(err => {
+                    document.getElementById('person-list').innerHTML = `<li class="error">加载失败: ${err.message}</li>`;
+                });
+        }
+        loadPersons();
+    </script>
+</body>
+</html>

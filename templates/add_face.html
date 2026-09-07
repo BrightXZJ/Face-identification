@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>添加人脸</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+    <div class="container">
+        <div class="nav-bar">
+            <a href="{{ url_for('index') }}" class="nav-back">← 返回主页</a>
+            <span class="nav-title">添加人脸</span>
+        </div>
+        <div class="add-face-panel">
+            <div class="video-preview">
+                <video id="video" autoplay></video>
+                <canvas id="canvas" style="display: none;"></canvas>
+                <button id="capture-btn" class="btn-primary">📸 拍照</button>
+            </div>
+            <div class="form-area">
+                <input type="text" id="name-input" placeholder="输入姓名（如 ZhangSan）" />
+                <button id="submit-btn" class="btn-success">✅ 录入</button>
+                <div id="message" class="message"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const captureBtn = document.getElementById('capture-btn');
+        const submitBtn = document.getElementById('submit-btn');
+        const nameInput = document.getElementById('name-input');
+        const messageDiv = document.getElementById('message');
+
+        let capturedImage = null;  // 存储 base64 图片数据
+
+        // 启动摄像头
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+            .then(stream => {
+                video.srcObject = stream;
+            })
+            .catch(err => {
+                messageDiv.textContent = '❌ 无法访问摄像头: ' + err.message;
+                messageDiv.style.color = 'red';
+            });
+
+        captureBtn.addEventListener('click', function() {
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            capturedImage = canvas.toDataURL('image/jpeg');
+            messageDiv.textContent = '✅ 拍照成功，请输入姓名并点击录入';
+            messageDiv.style.color = 'green';
+        });
+
+        submitBtn.addEventListener('click', function() {
+            const name = nameInput.value.trim();
+            if (!name) {
+                messageDiv.textContent = '⚠️ 请先输入姓名';
+                messageDiv.style.color = 'orange';
+                return;
+            }
+            if (!capturedImage) {
+                messageDiv.textContent = '⚠️ 请先拍照';
+                messageDiv.style.color = 'orange';
+                return;
+            }
+
+            // 将 base64 转为 Blob
+            const byteString = atob(capturedImage.split(',')[1]);
+            const mimeString = capturedImage.split(',')[0].split(':')[1].split(';')[0];
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+            for (let i = 0; i < byteString.length; i++) {
+                ia[i] = byteString.charCodeAt(i);
+            }
+            const blob = new Blob([ab], { type: mimeString });
+
+            const formData = new FormData();
+            formData.append('name', name);
+            formData.append('image', blob, 'face.jpg');
+
+            messageDiv.textContent = '⏳ 正在录入...';
+            messageDiv.style.color = 'blue';
+
+            fetch('/api/add_person', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    messageDiv.textContent = '✅ ' + data.msg;
+                    messageDiv.style.color = 'green';
+                    nameInput.value = '';
+                    capturedImage = null;
+                } else {
+                    messageDiv.textContent = '❌ ' + data.msg;
+                    messageDiv.style.color = 'red';
+                }
+            })
+            .catch(err => {
+                messageDiv.textContent = '❌ 请求失败: ' + err.message;
+                messageDiv.style.color = 'red';
+            });
+        });
+    </script>
+</body>
+</html>
